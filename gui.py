@@ -8,6 +8,7 @@ import matplotlib as mpl
 
 # fig = plt.figure(figsize=(5, 4), dpi=100)
 t = np.arange(-5, 5, .01)
+mod = 5
 # fig.add_subplot(111).plot(t, 2 * np.sin(2 * np.pi * t))
 
 
@@ -27,8 +28,7 @@ def draw_eliptic_cont(A,B,ax,figure):
     ax.contour(x.ravel(), y.ravel(), pow(y, 2) - calc_eliptic(A,B,x), [0])
     figure.draw()
 
-def draw_eliptic_disc(A,B,ax,figure):
-    mod = 5
+def draw_eliptic_disc(A,B,ax,figure,mod):
     x = np.arange(0, mod, 1)
     y = calc_eliptic(A,B,x)%mod
     y = np.sqrt(y)
@@ -40,26 +40,34 @@ def draw_eliptic_disc(A,B,ax,figure):
     ax.scatter(valid_x, y2)
     figure.draw()
 
+def calc_slope(x,y,A):
+    return (3*(x**2)+A)/(2*y)
+
+def calc_slope_disc(x,y,A,mod):
+    return ((3*(x**2)+A) * pow(2*y,-1,mod))%mod
+
 def calc_tengeant(x,A,B,inv = 1):
     y = inv * calc_eliptic(A,B,x)**(1/2)
-    a = (3*(x**2)+A)/(2*y)
+    a = calc_slope(x,y,A)
     b = y - a*x
     return a*t+b
 
 def calc_tengeant_crossing(x,A,B):
-    
-    el = (x**3 + A*x + B)**(1/2)
-    tan = a*x + b
-
-
-
-    x3 = calc_eliptic(A,B,x)
-    a = (3*(x**2)+A)/(2*y)
-    b = y - a*x
     return a*t+b
 
 def draw_tengeant(x,A,B,ax,figure, inv = 1):
     tengeant = calc_tengeant(x,A,B, inv)
+    ax.plot(t, tengeant)
+    figure.draw()
+
+def draw_tengeant_disc(x,A,B,ax,figure,mod):
+    y = calc_eliptic(A,B,x)%mod
+    # slope = calc_slope_disc(x,A,B,mod)
+    slope = calc_slope(x,A,B)
+    print(calc_slope_disc(x,A,B,mod))
+    print(calc_slope(x,A,B))
+    height = y - x*slope
+    tengeant = (slope * t + height) % mod
     ax.plot(t, tengeant)
     figure.draw()
 
@@ -68,8 +76,8 @@ def draw_tengeant(x,A,B,ax,figure, inv = 1):
 layout = [
     [sg.Image('ce.png',
    expand_x=True, expand_y=True )],
-    [sg.Text('A'), sg.Input('', enable_events=True,  key='A')],
-    [sg.Text('B'), sg.Input('', enable_events=True,  key='B')],
+    [sg.Text('A'), sg.Input('1', enable_events=True,  key='A')],
+    [sg.Text('B'), sg.Input('1', enable_events=True,  key='B')],
     [sg.Canvas(key="-CONT-"),sg.Canvas(key="-DISC-")],
     [sg.Text('x1'), sg.Input('', enable_events=True,  key='x1')],
     [sg.Text('x2'), sg.Input('', enable_events=True,  key='x2')],
@@ -101,7 +109,7 @@ ax_disc.grid(True)
 fig_disc_agg = draw_figure(canvas_disc, fig_disc)
 
 draw_eliptic_cont(1,1,ax_cont,fig_cont_agg)
-draw_eliptic_disc(1,1,ax_disc,fig_disc_agg)
+draw_eliptic_disc(1,1,ax_disc,fig_disc_agg,mod)
 
 event, values = window.read()
 
@@ -123,18 +131,24 @@ while True:             # Event Loop
     ## clean plot
     ax_cont.cla()
     ax_cont.grid(True)
+    ax_disc.cla()
+    ax_disc.grid(True)
 
     try:
         A = int(values['A'])
         B = int(values['B'])
+        print("plot eliptic")
         draw_eliptic_cont(A,B,ax_cont,fig_cont_agg)
-        draw_eliptic_disc(A,B,ax_disc,fig_disc_agg)
+        draw_eliptic_disc(A,B,ax_disc,fig_disc_agg,mod)
 
+        print("plot tengeant 1")
         x1 = int(values['x1'])
-        draw_tengeant(x1,A,B,ax_cont,fig_cont_agg, 1)
+        draw_tengeant(x1,A,B,ax_cont,fig_cont_agg)
+        # draw_tengeant_disc(x1,A,B,ax_disc,fig_disc_agg,mod)
 
+        print("plot tengeant 2")
         x2 = int(values['x2'])
-        draw_tengeant(x2,A,B,ax_cont,fig_cont_agg, -1)
+        draw_tengeant(x2,A,B,ax_cont,fig_cont_agg)
 
 
     except:
